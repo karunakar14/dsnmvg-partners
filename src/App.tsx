@@ -281,7 +281,7 @@ function Navbar() {
               D
             </span>
             <span className="font-serif text-lg sm:text-xl tracking-tight">
-              DSNMVG <span className="text-gold">&amp;</span> Co.
+              DSNMVG <span className="font-sans not-italic font-normal text-gold">&amp;</span> Co.
             </span>
           </a>
           <ul className="hidden lg:flex items-center gap-1">
@@ -354,7 +354,7 @@ function Hero() {
           <Eyebrow dot>Chartered Accountants Since 2008</Eyebrow>
         </div>
         <h1 className="mt-8 font-serif font-bold text-balance text-5xl sm:text-7xl lg:text-8xl leading-[1.05] animate-fade-up [animation-delay:120ms]">
-          DSNMVG <span className="text-gold">&amp;</span> Co.
+          DSNMVG <span className="font-sans not-italic font-normal text-gold">&amp;</span> Co.
         </h1>
         <p className="mt-6 text-lg sm:text-xl text-foreground/75 max-w-2xl mx-auto animate-fade-up [animation-delay:240ms]">
           Trusted Chartered Accountants &amp; Financial Advisors delivering precision, integrity and
@@ -894,7 +894,7 @@ function Footer({ onSelectService }: { onSelectService: (subject: string) => voi
               D
             </span>
             <span className="font-serif text-xl">
-              DSNMVG <span className="text-gold">&amp;</span> Co.
+              DSNMVG <span className="font-sans not-italic font-normal text-gold">&amp;</span> Co.
             </span>
           </div>
           <p className="mt-4 text-sm text-muted-foreground leading-relaxed">
