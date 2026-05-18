@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, type FormEvent, type ReactNode } from "react";
+import emailjs from "@emailjs/browser";
 import {
   ArrowDown,
   ArrowRight,
@@ -21,7 +22,6 @@ import {
   MapPin,
   Menu,
   MessageCircle,
-  Moon,
   Phone,
   Quote,
   Receipt,
@@ -30,7 +30,6 @@ import {
   ShieldCheck,
   Star,
   Store,
-  Sun,
   TrendingUp,
   Twitter,
   User,
@@ -42,6 +41,11 @@ import { toast, Toaster } from "sonner";
 
 import heroBg from "@/assets/hero-bg.jpg";
 import aboutImg from "@/assets/about-office.jpg";
+
+const CONTACT_EMAIL = "karunakargade2001@gmail.com";
+const EMAILJS_SERVICE_ID = "YOUR_SERVICE_ID";
+const EMAILJS_TEMPLATE_ID = "YOUR_TEMPLATE_ID";
+const EMAILJS_PUBLIC_KEY = "YOUR_PUBLIC_KEY";
 
 const NAV = [
   { id: "home", label: "Home" },
@@ -250,13 +254,7 @@ function Eyebrow({ children, dot }: { children: ReactNode; dot?: boolean }) {
   );
 }
 
-function Navbar({
-  theme,
-  setTheme,
-}: {
-  theme: "dark" | "light";
-  setTheme: (t: "dark" | "light") => void;
-}) {
+function Navbar() {
   const active = useActiveSection();
   const [scrolled, setScrolled] = useState(false);
   const [open, setOpen] = useState(false);
@@ -302,13 +300,6 @@ function Navbar({
             ))}
           </ul>
           <div className="flex items-center gap-2">
-            <button
-              aria-label="Toggle theme"
-              onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-              className="grid place-items-center h-10 w-10 rounded-lg glass hover:border-gold/50 transition-colors"
-            >
-              {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
-            </button>
             <button
               aria-label="Menu"
               onClick={() => setOpen((value) => !value)}
@@ -468,7 +459,7 @@ function About() {
   );
 }
 
-function Services() {
+function Services({ onSelectService }: { onSelectService: (subject: string) => void }) {
   return (
     <section id="services" className="relative py-24 sm:py-32 bg-navy-deep/40">
       <div className="absolute inset-0 gradient-radial-gold opacity-30 pointer-events-none" />
@@ -485,8 +476,10 @@ function Services() {
         </div>
         <div className="mt-16 grid sm:grid-cols-2 lg:grid-cols-4 gap-5">
           {SERVICES.map((service, i) => (
-            <article
+            <button
               key={service.title}
+              type="button"
+              onClick={() => onSelectService(service.title)}
               className="reveal group relative glass rounded-2xl p-6 hover-lift overflow-hidden"
               style={{ transitionDelay: `${(i % 4) * 60}ms` }}
             >
@@ -496,7 +489,10 @@ function Services() {
               </div>
               <h3 className="font-serif text-xl">{service.title}</h3>
               <p className="mt-3 text-sm text-muted-foreground leading-relaxed">{service.desc}</p>
-            </article>
+              <span className="mt-5 inline-flex text-xs font-semibold uppercase tracking-[0.22em] text-gold/80">
+                Ask about this service
+              </span>
+            </button>
           ))}
         </div>
       </div>
@@ -689,16 +685,21 @@ function Testimonials() {
   );
 }
 
-function ContactSection() {
+function ContactSection({ selectedSubject }: { selectedSubject: string }) {
   const [form, setForm] = useState({
     name: "",
     email: "",
     phone: "",
-    subject: "General Inquiry",
+    subject: selectedSubject,
     message: "",
   });
+  const [isSending, setIsSending] = useState(false);
 
-  const onSubmit = (event: FormEvent) => {
+  useEffect(() => {
+    setForm((current) => ({ ...current, subject: selectedSubject }));
+  }, [selectedSubject]);
+
+  const onSubmit = async (event: FormEvent) => {
     event.preventDefault();
 
     if (!form.name.trim() || form.name.length > 100)
@@ -708,8 +709,42 @@ function ContactSection() {
     if (form.message.length > 500) return toast.error("Message too long");
     if (!form.message.trim()) return toast.error("Please enter a message");
 
-    toast.success("Thanks! We'll be in touch within 24 hours.");
-    setForm({ name: "", email: "", phone: "", subject: "General Inquiry", message: "" });
+    setIsSending(true);
+
+    try {
+      if (
+        EMAILJS_SERVICE_ID === "YOUR_SERVICE_ID" ||
+        EMAILJS_TEMPLATE_ID === "YOUR_TEMPLATE_ID" ||
+        EMAILJS_PUBLIC_KEY === "YOUR_PUBLIC_KEY"
+      ) {
+        throw new Error(
+          "Set EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, and EMAILJS_PUBLIC_KEY at the top of src/App.tsx.",
+        );
+      }
+
+      await emailjs.send(
+        EMAILJS_SERVICE_ID,
+        EMAILJS_TEMPLATE_ID,
+        {
+          name: form.name,
+          email: form.email,
+          phone: form.phone,
+          subject: form.subject,
+          message: form.message,
+          to_email: CONTACT_EMAIL,
+          reply_to: form.email,
+        },
+        { publicKey: EMAILJS_PUBLIC_KEY },
+      );
+
+      toast.success("Your message was sent successfully.");
+      setForm({ name: "", email: "", phone: "", subject: selectedSubject, message: "" });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Failed to send message";
+      toast.error(message);
+    } finally {
+      setIsSending(false);
+    }
   };
 
   return (
@@ -730,7 +765,7 @@ function ContactSection() {
             <h3 className="font-serif text-3xl">Contact Information</h3>
             {[
               { icon: Phone, label: "Phone", value: "+91 98765 43210" },
-              { icon: Mail, label: "Email", value: "info@dsnmvgco.com" },
+              { icon: Mail, label: "Email", value: CONTACT_EMAIL },
               {
                 icon: MapPin,
                 label: "Office Address",
@@ -805,11 +840,16 @@ function ContactSection() {
               >
                 {[
                   "General Inquiry",
-                  "Taxation",
-                  "GST & Compliance",
-                  "Audit",
+                  "Taxation Services",
+                  "GST Filing & Compliance",
+                  "Audit & Assurance",
                   "Company Registration",
-                  "Advisory",
+                  "Accounting & Bookkeeping",
+                  "Payroll Services",
+                  "Financial Advisory",
+                  "ROC Compliance",
+                  "Income Tax Filing",
+                  "Business Consulting",
                 ].map((subject) => (
                   <option key={subject}>{subject}</option>
                 ))}
@@ -832,9 +872,10 @@ function ContactSection() {
             </div>
             <button
               type="submit"
-              className="w-full gradient-gold text-gold-foreground font-semibold py-4 rounded-xl shadow-lg shadow-gold/20 hover:shadow-gold/40 hover:translate-y-[-2px] transition-all"
+              disabled={isSending}
+              className="w-full gradient-gold text-gold-foreground font-semibold py-4 rounded-xl shadow-lg shadow-gold/20 hover:shadow-gold/40 hover:translate-y-[-2px] transition-all disabled:cursor-not-allowed disabled:opacity-70 disabled:hover:translate-y-0"
             >
-              Send Message
+              {isSending ? "Sending..." : "Send Message"}
             </button>
           </form>
         </div>
@@ -843,7 +884,7 @@ function ContactSection() {
   );
 }
 
-function Footer() {
+function Footer({ onSelectService }: { onSelectService: (subject: string) => void }) {
   return (
     <footer className="bg-navy-deep border-t border-border">
       <div className="mx-auto max-w-7xl px-6 py-16 grid md:grid-cols-2 lg:grid-cols-4 gap-10">
@@ -878,15 +919,19 @@ function Footer() {
           <ul className="mt-5 space-y-3 text-sm text-muted-foreground">
             {[
               "Taxation Services",
-              "GST Filing",
+              "GST Filing & Compliance",
               "Audit & Assurance",
               "Company Registration",
-              "Accounting",
+              "Accounting & Bookkeeping",
             ].map((service) => (
               <li key={service}>
-                <a href="#services" className="hover:text-gold transition-colors">
+                <button
+                  type="button"
+                  onClick={() => onSelectService(service)}
+                  className="hover:text-gold transition-colors"
+                >
                   {service}
-                </a>
+                </button>
               </li>
             ))}
           </ul>
@@ -927,7 +972,7 @@ function Footer() {
               <Phone className="h-4 w-4 text-gold shrink-0 mt-0.5" /> +91 98765 43210
             </li>
             <li className="flex gap-2">
-              <Mail className="h-4 w-4 text-gold shrink-0 mt-0.5" /> info@dsnmvgco.com
+              <Mail className="h-4 w-4 text-gold shrink-0 mt-0.5" /> {CONTACT_EMAIL}
             </li>
           </ul>
         </div>
@@ -935,14 +980,6 @@ function Footer() {
       <div className="border-t border-border">
         <div className="mx-auto max-w-7xl px-6 py-6 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-muted-foreground">
           <div>© {new Date().getFullYear()} DSNMVG &amp; Co. All rights reserved.</div>
-          <div className="flex gap-5">
-            <a href="#" className="hover:text-gold">
-              Privacy Policy
-            </a>
-            <a href="#" className="hover:text-gold">
-              Terms of Service
-            </a>
-          </div>
         </div>
       </div>
     </footer>
@@ -976,16 +1013,12 @@ function FloatingActions({ show }: { show: boolean }) {
 
 function HomePage() {
   useReveal();
-  const [theme, setTheme] = useState<"dark" | "light">("dark");
   const [showTop, setShowTop] = useState(false);
+  const [selectedSubject, setSelectedSubject] = useState("General Inquiry");
 
   useEffect(() => {
     document.title = "DSNMVG & Co. — Chartered Accountants & Financial Advisors";
   }, []);
-
-  useEffect(() => {
-    document.documentElement.classList.toggle("light", theme === "light");
-  }, [theme]);
 
   useEffect(() => {
     const h = () => setShowTop(window.scrollY > 600);
@@ -994,21 +1027,26 @@ function HomePage() {
     return () => window.removeEventListener("scroll", h);
   }, []);
 
+  const handleSelectService = (subject: string) => {
+    setSelectedSubject(subject);
+    document.getElementById("contact")?.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
+
   return (
     <div className="min-h-screen bg-background text-foreground">
       <Toaster position="top-right" richColors />
-      <Navbar theme={theme} setTheme={setTheme} />
+      <Navbar />
       <main>
         <Hero />
         <About />
-        <Services />
+        <Services onSelectService={handleSelectService} />
         <Industries />
         <Team />
         <Stats />
         <Testimonials />
-        <ContactSection />
+        <ContactSection selectedSubject={selectedSubject} />
       </main>
-      <Footer />
+      <Footer onSelectService={handleSelectService} />
       <FloatingActions show={showTop} />
     </div>
   );
